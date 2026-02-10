@@ -6,9 +6,26 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export const login = async (req, res) => {
+  const { email, password } = req.body;
   try {
-    res.send("Login route");
-  } catch (error) {}
+    const user = await User.findOne({ email });
+
+    if (!user || (await bcrypt.compare(password, user.password))) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    generateToken(user._id, res);
+
+    res.status(200).json({
+      _id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      profilePic: user.profilePic,
+    });
+  } catch (error) {
+    console.error("Error in login route:", error);
+    res.status(500).json({ message: "Server error" });
+  }
 };
 
 export const register = async (req, res) => {
@@ -56,7 +73,7 @@ export const register = async (req, res) => {
       });
 
       // Fire-and-forget: don't block request handler
-     if (process.env.CLIENT_URL) {
+      if (process.env.CLIENT_URL) {
         sendWelcomeEmail(
           newUser.email,
           newUser.fullName,
@@ -73,3 +90,13 @@ export const register = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
+export const logout = (req, res) => {
+  res.cookie("jwt", "", {
+    httpOnly: true,
+    expires: new Date(0),
+    path: "/",
+  });
+
+  res.status(200).json({ message: "Logged out successfully" });
+};                            
