@@ -1,6 +1,9 @@
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import { generateToken } from "../lib/utils.js";
+import { sendWelcomeEmail } from "../emails/emailHandler.js";
+import dotenv from "dotenv";
+dotenv.config();
 
 export const login = async (req, res) => {
   try {
@@ -51,6 +54,17 @@ export const register = async (req, res) => {
         email: newUser.email,
         profilePic: newUser.profilePic,
       });
+
+      // Fire-and-forget: don't block request handler
+     if (process.env.CLIENT_URL) {
+        sendWelcomeEmail(
+          newUser.email,
+          newUser.fullName,
+          process.env.CLIENT_URL,
+        ).catch((error) => {
+          console.error("Error sending welcome email:", error);
+        });
+      }
     } else {
       return res.status(400).json({ message: "Invalid user data" });
     }
