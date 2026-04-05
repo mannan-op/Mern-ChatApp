@@ -2,7 +2,7 @@
 
 A modern, real-time chat application built with the MERN stack and Socket.IO.
 
-![ChatApp Preview](https://via.placeholder.com/800x400/1e293b/0d9488?text=ChatApp+-+Real-time+Messaging)
+![ChatApp Preview](image.png)
 
 ## ✨ Features
 
