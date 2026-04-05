@@ -5,22 +5,31 @@
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.9.0",
     "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
     "dotenv": "^17.2.4",
     "express": "^5.2.1",
+    "helmet": "^8.0.0",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.1.6",
-    "resend": "^6.9.2"
+    "resend": "^6.9.2",
+    "socket.io": "^4.7.5"
   },
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "Chat application backend with real-time messaging",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node src/server.js",
     "dev": "node --watch src/server.js"
   },
-  "keywords": [],
+  "keywords": [
+    "chat",
+    "realtime",
+    "socket.io",
+    "express",
+    "mongodb"
+  ],
   "author": "",
   "license": "ISC",
   "type": "module"

@@ -1,6 +1,11 @@
 import Message from "../models/message.js";
 import User from "../models/User.js";
 import cloudinary from "../lib/cloudinary.js";
+import { getReceiverSocketId, io } from "../lib/socket.js";
+import mongoose from "mongoose";
+
+// Validate MongoDB ObjectId
+const isValidObjectId = (id) => mongoose.Types.ObjectId.isValid(id);
 
 export const getAllContacts = async (req, res) => {
   try {
@@ -21,10 +26,15 @@ export const getMessagesByUserId = async (req, res) => {
     const myId = req.user._id;
     const { id: userToChatId } = req.params;
 
+    // Validate userToChatId
+    if (!isValidObjectId(userToChatId)) {
+      return res.status(400).json({ message: "Invalid user ID" });
+    }
+
     const messages = await Message.find({
       $or: [
-        { sender: myId, recipient: userToChatId },
-        { sender: userToChatId, recipient: myId },
+        { senderId: myId, receiverId: userToChatId },
+        { senderId: userToChatId, receiverId: myId },
       ],
     }).sort({ createdAt: 1 });
 
@@ -38,25 +48,59 @@ export const getMessagesByUserId = async (req, res) => {
 export const sendMessage = async (req, res) => {
   try {
     const senderId = req.user._id;
-    const { id: recipient } = req.params;
+    const { id: receiverId } = req.params;
     const { text, image } = req.body;
+
+    // Validate receiverId
+    if (!isValidObjectId(receiverId)) {
+      return res.status(400).json({ message: "Invalid receiver ID" });
+    }
+
+    // Validate that at least text or image is provided
+    if (!text?.trim() && !image) {
+      return res.status(400).json({ message: "Message cannot be empty" });
+    }
+
+    // Validate text length
+    if (text && text.length > 5000) {
+      return res.status(400).json({ message: "Message too long (max 5000 characters)" });
+    }
+
+    // Verify receiver exists
+    const receiver = await User.findById(receiverId);
+    if (!receiver) {
+      return res.status(404).json({ message: "Receiver not found" });
+    }
 
     let imageUrl;
     if (image) {
-      const uploadResponse = await cloudinary.uploader.upload(image);
+      // Validate image is base64
+      if (!image.startsWith("data:image/")) {
+        return res.status(400).json({ message: "Invalid image format" });
+      }
+      const uploadResponse = await cloudinary.uploader.upload(image, {
+        folder: "chat_images",
+        resource_type: "image",
+        allowed_formats: ["jpg", "jpeg", "png", "gif", "webp"],
+        max_bytes: 5 * 1024 * 1024, // 5MB limit
+      });
       imageUrl = uploadResponse.secure_url;
     }
 
     const newMessage = new Message({
       senderId,
-      receiverId: recipient,
-      text,
+      receiverId,
+      text: text?.trim(),
       image: imageUrl,
     });
 
     await newMessage.save();
 
-    //real-time sending using Socket.io - todo
+    // Real-time messaging with Socket.IO
+    const receiverSocketId = getReceiverSocketId(receiverId);
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("newMessage", newMessage);
+    }
 
     res.status(201).json(newMessage);
   } catch (error) {
