@@ -7,6 +7,13 @@ import { useEffect } from "react";
 import PageLoader from "./components/PageLoader";
 import { Toaster } from "react-hot-toast";
 
+/**
+ * Top-level application component that provides the layout, decorative background, and route mappings.
+ *
+ * Renders the application's layout with three decorative background elements and a Routes container mapping
+ * "/login" to the Login page, "/signup" to the SignUp page, and "/" to the ChatPage.
+ * @returns {JSX.Element} The React element tree for the application layout and routes.
+ */
 function App() {
   const { checkAuth, isCheckingAuth, authUser } = useAuthStore();
 
